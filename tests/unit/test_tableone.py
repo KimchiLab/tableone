@@ -121,8 +121,9 @@ def data_mixed(n=20):
     mu, sigma = 50, 5
     data_mixed['mixed numeric data'] = np.random.normal(mu, sigma, n)
 
-    # FutureWarning: Setting an item of incompatible dtype is deprecated
-    # and will raise an error in a future version of pandas.
+    # Convert to object dtype to allow mixed types (string in numeric column).
+    # This is required for pandas 3.0+ which enforces strict dtype.
+    data_mixed['mixed numeric data'] = data_mixed['mixed numeric data'].astype(object)
     data_mixed.loc[1, 'mixed numeric data'] = 'could not measure'
 
     return data_mixed
@@ -1430,3 +1431,47 @@ def test_ttest_equal_var_flag():
     t2 = TableOne(df, columns=['x'], groupby='group', pval=True, ttest_equal_var=True, pval_digits=5)
     pval = t2.tableone[('Grouped by group', 'P-Value')].iloc[1]
     assert pval == "0.00010"
+
+
+def test_pandas_string_dtype_compatibility():
+    """
+    Test that TableOne works with pandas string dtype columns.
+
+    Pandas 3.0+ enforces strict string dtype, which raises TypeError when
+    assigning non-string values (like integers) to string-typed columns.
+    This test verifies the fix for GitHub issue #207.
+
+    See: https://pandas.pydata.org/docs/user_guide/migration-3-strings.html
+    """
+    # Create DataFrame with explicit string dtype (simulates pandas 3.0 behavior)
+    df = pd.DataFrame({
+        'group': pd.array(['A', 'A', 'B', 'B', 'B'], dtype='string'),
+        'category': pd.array(['x', 'y', 'x', 'y', 'y'], dtype='string'),
+    })
+
+    # This should not raise TypeError when inserting 'n' row counts
+    table = TableOne(df, columns=['category'], categorical=['category'], groupby='group')
+
+    # Verify the table was created successfully
+    assert table.tableone is not None
+
+    # Verify the 'n' row exists and has correct counts
+    n_row = table.tableone.loc['n', :]
+    assert n_row is not None
+
+
+def test_pandas_string_dtype_with_overall():
+    """
+    Test that TableOne works with string dtype when overall=True.
+    """
+    df = pd.DataFrame({
+        'group': pd.array(['A', 'A', 'B', 'B', 'B'], dtype='string'),
+        'category': pd.array(['x', 'y', 'x', 'y', 'y'], dtype='string'),
+    })
+
+    # This should not raise TypeError
+    table = TableOne(df, columns=['category'], categorical=['category'],
+                     groupby='group', overall=True)
+
+    assert table.tableone is not None
+    assert 'Overall' in str(table.tableone.columns)
