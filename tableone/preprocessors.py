@@ -118,6 +118,8 @@ def handle_categorical_nulls(df: pd.DataFrame, categorical: list, null_value: st
     df = df.copy()
     for column in categorical:
         if df[column].isnull().any():
-            df[column] = df[column].astype(object).astype(str)
-            df[column] = df[column].replace('nan', null_value)
+            # Convert to object dtype to allow mixed types, then to string.
+            # Use fillna() instead of replace() for pandas 3.0 compatibility,
+            # as NA values are not the string 'nan' in pandas 3.0+.
+            df[column] = df[column].astype(object).fillna(null_value).astype(str)
     return df

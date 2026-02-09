@@ -629,6 +629,13 @@ class TableOne:
         except TypeError:
             table = pd.concat([n_row, table])
 
+        # Ensure columns are object dtype to allow mixed type assignment.
+        # This is required for pandas 3.0+ which enforces strict string dtype.
+        # See: https://pandas.pydata.org/docs/user_guide/migration-3-strings.html
+        for col in table.columns:
+            if pd.api.types.is_string_dtype(table[col]):
+                table[col] = table[col].astype(object)
+
         if self._groupbylvls == ['Overall']:
             table.loc['n', 'Overall'] = len(data.index)
         else:
