@@ -304,7 +304,7 @@ class TableOne:
     def initialize_core_attributes(self, data, columns, categorical, continuous, groupby,
                                    nonnormal, min_max, pval, pval_adjust, htest_name,
                                    htest, missing, ddof, rename, sort, limit, order,
-                                   label_suffix, decimals, smd, overall, row_percent, 
+                                   label_suffix, decimals, smd, overall, row_percent,
                                    dip_test, normal_test, tukey_test, pval_threshold,
                                    include_null, pval_digits, ttest_equal_var,
                                    show_histograms, clip_histograms):
@@ -348,6 +348,8 @@ class TableOne:
         self._warnings = {}
 
         if self._categorical and self._include_null:
+            # Create a copy to avoid mutating the user's original DataFrame
+            data = data.copy()
             data[self._categorical] = handle_categorical_nulls(data[self._categorical], self._categorical)
 
         self._groupbylvls = get_groups(data, self._groupby, self._order, self._reserved_columns)

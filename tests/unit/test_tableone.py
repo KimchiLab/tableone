@@ -1396,6 +1396,94 @@ def test_handle_categorical_nulls_does_not_affect_continuous():
     assert result['cat'].iloc[2] == 'None'
 
 
+def test_handle_categorical_nulls_does_not_mutate_original():
+    """
+    Test that handle_categorical_nulls does not mutate the original DataFrame.
+    This tests the preprocessor function directly.
+    """
+    df = pd.DataFrame({
+        'cat': [1, 2, np.nan],
+        'other': ['a', 'b', 'c']
+    })
+
+    df_original = df.copy()
+    result = handle_categorical_nulls(df, categorical=['cat'])
+
+    pd.testing.assert_frame_equal(df, df_original, check_dtype=True)
+    assert result['cat'].iloc[2] == 'None'
+
+
+def test_tableone_does_not_mutate_input_with_numeric_categorical_nan():
+    """
+    Test that TableOne does not mutate the original DataFrame when processing
+    numeric categorical variables with NaN values.
+
+    Regression test for issue where NaN values were converted to string 'None'
+    in the original DataFrame.
+    """
+    df = pd.DataFrame({
+        'id': [1, 2, 3],
+        'category_col': [1, np.nan, 2]
+    })
+
+    df_original = df.copy()
+
+    TableOne(df, categorical=['category_col'], pval=False)
+
+    pd.testing.assert_frame_equal(df, df_original, check_dtype=True)
+
+
+def test_tableone_does_not_mutate_input_with_string_categorical_nan():
+    """
+    Test that TableOne does not mutate the original DataFrame when processing
+    string categorical variables with NaN values.
+    """
+    df = pd.DataFrame({
+        'id': [1, 2, 3],
+        'category_col': ['A', np.nan, 'B']
+    })
+
+    df_original = df.copy()
+
+    TableOne(df, categorical=['category_col'], pval=False)
+
+    pd.testing.assert_frame_equal(df, df_original, check_dtype=True)
+
+
+def test_tableone_does_not_mutate_input_with_groupby_and_pval():
+    """
+    Test that TableOne does not mutate the original DataFrame when using
+    groupby and pval with categorical variables containing NaN.
+    """
+    df = pd.DataFrame({
+        'group': ['A', 'B', 'A', 'B'],
+        'cat_var': [1, 2, np.nan, 3]
+    })
+
+    df_original = df.copy()
+
+    TableOne(df, categorical=['cat_var'], groupby='group', pval=True)
+
+    pd.testing.assert_frame_equal(df, df_original, check_dtype=True)
+
+
+def test_tableone_does_not_mutate_input_with_include_null_false():
+    """
+    Test that TableOne does not mutate the original DataFrame even when
+    include_null=False.
+    """
+    df = pd.DataFrame({
+        'id': [1, 2, 3],
+        'category_col': [1, np.nan, 2]
+    })
+
+    df_original = df.copy()
+
+    TableOne(df, categorical=['category_col'], include_null=False, pval=False)
+
+    pd.testing.assert_frame_equal(df, df_original, check_dtype=True)
+
+
 def test_pval_digits_custom_formatting():
     df = pd.DataFrame({
         'group': ['A', 'A', 'B', 'B', 'B'],
