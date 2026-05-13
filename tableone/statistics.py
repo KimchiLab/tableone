@@ -9,6 +9,7 @@ from statsmodels.stats import multitest
 from tableone.modality import hartigan_diptest
 from tableone.exceptions import InputError
 
+from importlib.metadata import version
 
 class Statistics:
     def __init__(self):
@@ -183,16 +184,18 @@ class Statistics:
             _, pval, _, expected = stats.chi2_contingency(
                 grouped_val_list)
             # if any expected cell counts are < 5, chi2 may not be valid
-            # if this is a 2x2, switch to fisher exact
+            # switch to fisher exact: more than 2x2 supported as of at least scipy 1.15.0
             if expected.min() < 5 or min_observed < 5:
-                if np.shape(grouped_val_list) == (2, 2):
+                if version('scipy') >= '1.15.0' or np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
                     odds_ratio, pval = stats.fisher_exact(grouped_val_list)
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
                     chi_warn = ("Chi-squared tests for the following "
                                 "variables may be invalid due to the low "
-                                "number of observations")
+                                "number of observations."
+                                "Fisher's exact test is recommended but not "
+                                "available in scipy versions < 1.15.0.")
                     warning_msg = chi_warn
 
         return pval, ptest, warning_msg
