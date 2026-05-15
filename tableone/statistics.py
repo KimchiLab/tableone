@@ -188,7 +188,10 @@ class Statistics:
             if expected.min() < 5 or min_observed < 5:
                 if version('scipy') >= '1.15.0' or np.shape(grouped_val_list) == (2, 2):
                     ptest = "Fisher's exact"
-                    odds_ratio, pval = stats.fisher_exact(grouped_val_list)
+                    method = stats.MonteCarloMethod(rng=np.random.default_rng(seed=42))
+                    # use Monte Carlo method for large tables or small expected counts: 
+                    # method is not deterministic for larger than 2x2 tables, so set seed
+                    odds_ratio, pval = stats.fisher_exact(grouped_val_list, method=method)
                 else:
                     ptest = "Chi-squared (warning: expected count < 5)"
                     chi_warn = ("Chi-squared tests for the following "
